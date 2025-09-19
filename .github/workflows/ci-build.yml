@@ -1,0 +1,150 @@
+# Task 9.2C Submission Workflow for CI (Continuous Integration)
+name: CI - Test, Build and Push Images to ACR
+
+on:
+  # Can be run manually
+  workflow_dispatch:
+
+  # Or via a push to the development branch with changes targeting the mentioned paths
+  push:
+    branches:
+      - development
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci-build.yml'
+
+# Fetches AZURE_CONTAINER_REGISTRY from repository secrets for GitHub Actions
+# And creates image tag from the SHA hash of the commit
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  IMAGE_TAG: ${{ github.sha }}
+
+# We will specify our job(s) below
+jobs:
+  # We only have one job, everything needs to be run sequentially.
+  # Having multiple chained jobs can also work, but this is simple.
+  test_and_build:
+    name: Test, Build, and Push # Name of the job, just decorative
+    runs-on: ubuntu-latest # Image that GitHub will use to run this job
+    
+    # Below are the services which this job will need to run
+    services:
+      # A database for the product microservice
+      product_db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: products
+        # Make pg_isready available so the service is healthy before tests run
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      # And a database for the order microservice
+      order_db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: orders
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    # Below are the steps to be performed for this job
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Action to check out your repository code
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5 # Action to set up Python environment
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: | # Use a multi-line script to install pip dependencies
+          pip install --upgrade pip
+          # Loop through each backend service folder
+          for req in backend/*/requirements.txt; do
+            echo "Installing $req"
+            pip install -r "$req"
+          done
+          # Install CI tools
+          pip install pytest httpx
+
+      # For below two steps, always make sure the ports are correct and match the mapping specified in the aforementioned services
+      # Run tests for product service
+      - name: Run product_service tests
+        working-directory: backend/product_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432 
+          POSTGRES_DB: products
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          pytest tests --maxfail=1 --disable-warnings -q
+      
+      # Run tests for order service
+      - name: Run order_service tests
+        working-directory: backend/order_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433 
+          POSTGRES_DB: orders
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          pytest tests --maxfail=1 --disable-warnings -q
+
+      # This step requires AZURE_CREDENTIALS secret to be stored as a repo secret for GitHub Actions
+      # Store the Service Principal JSON as the secret value in the following format:
+      # {
+      #   "clientId": "<Client ID>",
+      #   "clientSecret": "<Client Secret>",
+      #   "subscriptionId": "<Subscription ID>",
+      #   "tenantId": "<Tenant ID>"
+      # }
+
+      # The clientId and tenantId can be easily obtained from the app's registration page
+      # For clientSecret, there is an option to create secret in the app's registration page. Create and use that.
+      # The subscriptionId can be obtained from the Azure portal.
+      - name: Azure Login
+        uses: azure/login@v1 # The GitHub Action for logging in to Azure
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }} 
+
+      # Make sure correct ACR registry name is present as a GitHub Secret in the repo
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
+
+      # This step builds and pushes the backend images to ACR. All images have an appropriate tag.
+      - name: Build and Push Backend Images
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:${{ env.IMAGE_TAG }} ./backend/product_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:${{ env.IMAGE_TAG }}
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:${{ env.IMAGE_TAG }} ./backend/order_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:${{ env.IMAGE_TAG }}
+
+      # This step builds and pushes the frontend image to ACR.
+      # This does not guarantee that the image will connect to backend when deployed.
+      # Check frontend/main.js for more details.
+      - name: Build and Push Base Frontend Image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }} ./frontend/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+      
+      # This step ensures that we logout from GitHub's VM
+      - name: Azure Logout
+        if: always()
+        run: az logout
