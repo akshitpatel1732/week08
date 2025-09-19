@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
       - name: order-service-container
-        image: 224579861week8.azurecr.io/order_service:latest
+      # Make sure this image name always contains the word "order_service". Check .github/workflows/manual-delivery.yml for more information.
+        image: order_service
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

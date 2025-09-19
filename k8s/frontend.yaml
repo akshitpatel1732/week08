@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: 224579861week8.azurecr.io/frontend:latest
+        # Make sure this image name always contains the word "frontend". Check .github/workflows/manual-delivery.yml for more information.
+        image: frontend
         imagePullPolicy: Always
         ports:
         - containerPort: 80
