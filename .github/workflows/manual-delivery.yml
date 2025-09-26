@@ -109,7 +109,7 @@ jobs:
           
           # Use sed to replace the empty values in the secrets file
           sed -i "s|AZURE_STORAGE_ACCOUNT_NAME: \"\"|AZURE_STORAGE_ACCOUNT_NAME: \"$B64_STORAGE_NAME\"|g" k8s/secrets.yaml
-          sed -i "s|AZURE_STORAGE_ACCOUNT_KEY: \"\"|AZURE_STORAGE_ACCOUNT_KEY: \"$ESCAPED_KEY\"|g" k8s/secrets.yaml
+          sed -i "s|AZURE_STORAGE_ACCOUNT_KEY: \"\"|AZURE_STORAGE_ACCOUNT_KEY: \"$B64_STORAGE_KEY\"|g" k8s/secrets.yaml
           
           echo "secrets.yaml configured."
 
