@@ -105,10 +105,7 @@ jobs:
         run: |
           # Base64 encode the values, as Kubernetes requires
           B64_STORAGE_NAME=$(echo -n "${{ env.STORAGE_ACCOUNT }}" | base64)
-          B64_STORAGE_KEY=$(echo -n "${{ env.AZURE_STORAGE_KEY }}" | base64)
-
-          # Escape it for safe insertion into sed
-          ESCAPED_KEY=$(printf '%s' "$B64_STORAGE_KEY" | sed 's/[&/\]/\\&/g')
+          B64_STORAGE_KEY=$(echo -n "${{ env.AZURE_STORAGE_KEY }}" | base64 | tr -d '\n')
           
           # Use sed to replace the empty values in the secrets file
           sed -i "s|AZURE_STORAGE_ACCOUNT_NAME: \"\"|AZURE_STORAGE_ACCOUNT_NAME: \"$B64_STORAGE_NAME\"|g" k8s/secrets.yaml
