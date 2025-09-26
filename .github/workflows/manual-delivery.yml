@@ -93,9 +93,11 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
       # This step tells the correct target to Kubernetes
-      - name: Set Kubernetes context (get AKS credentials)
-        run: |
-          az aks get-credentials --resource-group ${{ github.event.inputs.aks_resource_group }} --name ${{ github.event.inputs.aks_cluster_name }} --overwrite-existing
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AKS_RG }}
+          cluster-name: ${{ env.AKS_CLUSTER }}
 
       # This step updates the k8s/secrets.yaml file
       # The patterns must match in secrets.yaml manifest to update correct values
