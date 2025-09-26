@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        # Make sure this image name always contains the word "frontend". Check .github/workflows/manual-delivery.yml for more information.
-        image: frontend
+        # Make sure this pattern is not changed. Check .github/workflows/manual-delivery.yml for more information.
+        image: your-acr-name.azurecr.io/frontend:placeholder
         imagePullPolicy: Always
         ports:
         - containerPort: 80

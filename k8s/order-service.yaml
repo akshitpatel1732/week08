@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
       - name: order-service-container
-      # Make sure this image name always contains the word "order_service". Check .github/workflows/manual-delivery.yml for more information.
-        image: order_service
+      # Make sure this pattern is not changed. Check .github/workflows/manual-delivery.yml for more information.
+        image: your-acr-name.azurecr.io/order_service:placeholder
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
