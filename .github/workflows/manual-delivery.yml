@@ -121,6 +121,8 @@ jobs:
           sed -i "s|image: .*product_service:.*|image: ${{ secrets.AZURE_CONTAINER_REGISTRY }}/product_service:${{ env.IMAGE_TAG }}|g" k8s/product-service.yaml
           sed -i "s|image: .*order_service:.*|image: ${{ secrets.AZURE_CONTAINER_REGISTRY }}/order_service:${{ env.IMAGE_TAG }}|g" k8s/order-service.yaml
           
+          cat k8s/order-service.yaml
+
           # Apply all backend configurations
           kubectl apply -f k8s/configmaps.yaml -f k8s/secrets.yaml -f k8s/product-db.yaml -f k8s/order-db.yaml
           kubectl apply -f k8s/product-service.yaml -f k8s/order-service.yaml
