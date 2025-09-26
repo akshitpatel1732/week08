@@ -64,9 +64,9 @@ jobs:
             # Set environment variables from existing prod environment 
             echo "TRIGGER_TYPE=automatic" >> $GITHUB_ENV
             echo "IMAGE_TAG=${{ github.event.pull_request.merge_commit_sha }}" >> $GITHUB_ENV
-            echo "AKS_CLUSTER=prod-aks-cluster" >> $GITHUB_ENV 
-            echo "AKS_RG=prod-rg" >> $GITHUB_ENV             
-            echo "STORAGE_ACCOUNT=prodstorageaccount" >> $GITHUB_ENV 
+            echo "AKS_CLUSTER=224579861week9c" >> $GITHUB_ENV 
+            echo "AKS_RG=224579861week9c" >> $GITHUB_ENV             
+            echo "STORAGE_ACCOUNT=224579861week9c" >> $GITHUB_ENV 
           fi
       
       # The below step ensures that we checkout the correct commit
